@@ -1,0 +1,9 @@
+{
+    "idf.pythonInstallPath": "C:\\Users\\Li\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+    "files.associations": {
+        "bright_tile.h": "c",
+        "lvgl_ui.h": "c",
+        "lvgl.h": "c",
+        "stdio.h": "c"
+    }
+}
