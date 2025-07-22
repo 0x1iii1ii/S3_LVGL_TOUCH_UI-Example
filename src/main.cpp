@@ -30,6 +30,8 @@
 
 #define LEDC_FREQ             5000
 
+#define LOCK_PIN GPIO_NUM_0
+
 uint32_t screenWidth;
 uint32_t screenHeight;
 uint32_t bufSize;
@@ -120,8 +122,18 @@ void setup()
   //touch_init(gfx->width(), gfx->height(), gfx->getRotation());
   Wire.begin(Touch_I2C_SDA, Touch_I2C_SCL);
   bsp_touch_init(&Wire, Touch_RST, Touch_INT, gfx->getRotation(), gfx->width(), gfx->height());
+  bsp_wifi_init("Lab Team", "VP.Start@168");
+  bsp_battery_init();
+  bsp_sdcard_init();
   lv_init();
-
+  pinMode(LOCK_PIN, INPUT_PULLUP);
+  esp_sleep_enable_ext0_wakeup(LOCK_PIN, 0); // Wake on LOW
+  // Detect if we woke from deep sleep
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
+    Serial.println("Woke up from deep sleep!");
+  } else {
+    Serial.println("Normal boot");
+  }
 #if LV_USE_LOG != 0
   lv_log_register_print_cb(my_print); /* register print function for debugging */
 #endif
@@ -194,11 +206,47 @@ void setup()
 
   Serial.println("Setup done");
 }
-
+bool sleeping = false;
+#define LONG_PRESS_TIME 300
 void loop()
 {
-  lv_timer_handler(); /* let the GUI do its work */
+  if (!sleeping) {
+    lv_timer_handler(); // Let GUI update only when awake
+  }
 
+  // Detect long press
+  if (digitalRead(LOCK_PIN) == LOW) {
+    unsigned long pressStart = millis();
+
+    while (digitalRead(LOCK_PIN) == LOW) {
+      if (millis() - pressStart >= LONG_PRESS_TIME) {
+        Serial.println("Long press detected");
+
+        // Wait for release BEFORE entering sleep
+        while (digitalRead(LOCK_PIN) == LOW) {
+          delay(10);
+        }
+
+        Serial.println("Button released → entering light sleep");
+        sleeping = true;
+
+        // Setup wake source (LOW = pressed)
+        esp_sleep_enable_ext0_wakeup(LOCK_PIN, 0);
+        delay(100); // Flush serial
+
+        // Enter light sleep
+        ledcWrite(GFX_BL, 0);
+        esp_light_sleep_start();
+
+        // Woke up!
+        Serial.println("Woke up from light sleep!");
+        sleeping = false;
+        ledcWrite(GFX_BL, (1 << LEDC_TIMER_10_BIT) / 100 * 50); // 100% brightness
+        break;
+      }
+      delay(10);
+    }
+  }
 #ifdef DIRECT_RENDER_MODE
 #if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
   gfx->flush();

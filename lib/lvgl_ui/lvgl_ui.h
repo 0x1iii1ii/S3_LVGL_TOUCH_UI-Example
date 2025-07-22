@@ -10,6 +10,10 @@
 #include "ui_Screen1.h"
 #include "ui_Screen2.h"
 #include "ui_Screen3.h"
+#include "wifi_tile.h"
+#include "bsp_wifi.h"
+#include "bsp_sdcard.h"
+#include "bsp_battery.h"
 
 #ifdef __cplusplus
 extern "C" {

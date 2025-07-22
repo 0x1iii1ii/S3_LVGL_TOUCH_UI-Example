@@ -4,6 +4,9 @@
         "bright_tile.h": "c",
         "lvgl_ui.h": "c",
         "lvgl.h": "c",
-        "stdio.h": "c"
-    }
+        "stdio.h": "c",
+        "ui_screen2.h": "c",
+        "sys.h": "c"
+    },
+    "idf.portWin": "COM13"
 }

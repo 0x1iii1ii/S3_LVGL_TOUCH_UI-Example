@@ -9,6 +9,7 @@
 static lv_obj_t *label_brightness;
 static lv_obj_t *label_chip_temp;
 static lv_obj_t *label_battery;
+static uint8_t g_brightness = 0;
 
 temperature_sensor_handle_t temp_sensor = NULL;
 
@@ -19,6 +20,7 @@ static void slider_event_cb(lv_event_t *e)
     {
         lv_obj_t *slider = lv_event_get_target(e);
         int value = lv_slider_get_value(slider);
+        g_brightness = value;
         // printf("Slider value: %d\n", value);
 
         lv_label_set_text_fmt(label_brightness, "%d%%", value);
@@ -33,8 +35,8 @@ static void system_time_cb(lv_timer_t *timer)
     char str[20];
     float tsens_out;
     float bat_voltage;
-    // bsp_battery_get_voltage(&bat_voltage, NULL);
-    sprintf(str, "%.2f V", 4.2f);
+    bsp_battery_get_voltage(&bat_voltage, NULL);
+    sprintf(str, "%.2f V", bat_voltage);
     lv_label_set_text(label_battery, str);
 
     temperature_sensor_get_celsius(temp_sensor, &tsens_out);
@@ -56,7 +58,6 @@ void system_tile_init(lv_obj_t *parent)
     lv_obj_set_style_text_font(lable, &lv_font_montserrat_16, LV_PART_MAIN);
     lv_label_set_text(lable, "System");
     lv_obj_align(lable, LV_ALIGN_TOP_MID, 0, 3);
-
 
     lv_obj_set_size(list, lv_pct(100), lv_pct(75));
     // lv_obj_center(list);
@@ -94,7 +95,7 @@ void system_tile_init(lv_obj_t *parent)
 
     list_item = lv_list_add_btn(list, NULL, "Brightness");
     label_brightness = lv_label_create(list_item);
-    uint8_t brightness = 75;
+    uint8_t brightness = g_brightness;
     lv_label_set_text_fmt(label_brightness, "%d%%", brightness);
     // lv_label_set_text(label_brightness, "100%");
 
@@ -114,7 +115,7 @@ void system_tile_init(lv_obj_t *parent)
 
     list_item = lv_list_add_btn(list, NULL, "SDCard");
     lv_obj_t *label_sd = lv_label_create(list_item);
-    sdcard_size = 0;
+    sdcard_size = bsp_sdcard_get_size();
     lv_label_set_text_fmt(label_sd, "%d MB", (int)(sdcard_size / 1024 / 1024));
     
     list_item = lv_list_add_btn(list, NULL, "Battery");
